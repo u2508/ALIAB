@@ -3,13 +3,30 @@ import multiprocessing
 import json
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QLabel,
+    QPushButton,
+    QFrame,
+    QTextEdit,
+    QDialog,
+    QVBoxLayout,
+    QLineEdit,
+    QSlider,
+    QMessageBox,QWidget
+    ,QHBoxLayout,
+    QDesktopWidget
+)
 import openai
-import wikipediaapi
+import wikipedia
+from datetime import datetime
 from voice_recognition_module import Speech, voice
 import logging
 
 api_key = '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'
+
+
 class SettingsDialog(QDialog):
     def __init__(self, ai):
         super().__init__()
@@ -63,11 +80,11 @@ logging.basicConfig(filename='bot/ai.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s: %(message)s')
 
 class SelfLearningAI:
-    def __init__(self, api_key):
+    def __init__(self, api_key=0,win=None):
         self.api_key = api_key
         self.load_knowledge_base()
         self.gpt3_temperature = 0.7
-
+        self.window=  win
     def query_gpt3(self, input_text):
         openai.api_key = self.api_key
         response = openai.Completion.create(
@@ -84,7 +101,7 @@ class SelfLearningAI:
 
     def search_wikipedia(self, query):
         try:
-            wiki_wiki = wikipediaapi.Wikipedia("en")
+            wiki_wiki = wikipedia.set_lang("en")
             page = wiki_wiki.page(query)
             if page.exists():
                 return page.summary
@@ -111,9 +128,10 @@ class SelfLearningAI:
                 pass
         else:
             Speech("Voice authentication failed after 3 attempts. Exiting.")
-            VoiceBotGUI(SelfLearningAI(api_key)).on_exit_button_click()
-    def chat_voice(self):                
-        VoiceBotGUI(SelfLearningAI(api_key)).count+=1
+            self.window.on_exit_button_click()
+    def chat_voice(self): 
+        print('nice')     
+        self.window.count+=1
         Speech("Hello! I AM ALIAB which stands for Ai with learning intelligence Algorithm and Database.")
         Speech("I have access to all of the internet and also having access to the gpt3 ai model.")
         while True:
@@ -124,7 +142,7 @@ class SelfLearningAI:
                 if user_input == 'exit':
                     Speech("Goodbye!")
                     print("ALIAB: Goodbye!")
-                    VoiceBotGUI(SelfLearningAI(api_key)).on_exit_button_click()
+                    self.window.on_exit_button_click()
 
                 if user_input in self.knowledge_base:
                     Speech(self.knowledge_base[user_input])
@@ -161,7 +179,7 @@ class SelfLearningAI:
                 Speech("An error occurred. Please try again.")
                 Speech(e)
         else:
-            VoiceBotGUI(SelfLearningAI(api_key)).stop_voice_interaction()
+            self.window.stop_voice_interaction()
     def save_knowledge_base(self):
         with open('knowledge_base.json', 'w') as file:
             json.dump(self.knowledge_base, file)
@@ -176,13 +194,16 @@ class SelfLearningAI:
 
 
 class VoiceBotGUI(QMainWindow):
-    def __init__(self, ai):
+    def __init__(self):
         super().__init__()
-        self.voice_bot = VoiceBot(ai)
+        self.voice_bot = VoiceBot(
+    SelfLearningAI(api_key,self))
         self.setWindowTitle("Voice Bot GUI")
         self.interaction_history = ['\n',]
         self.init_ui()
-        self.count=0
+        # showing all the widgets
+        global count
+        count=0
     def log_interaction(self, user_input, ai_response):
         # Log user input and AI response in the history list
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -193,16 +214,21 @@ class VoiceBotGUI(QMainWindow):
         history_text = "".join(self.interaction_history)
         self.history_text.setPlainText(history_text)
     def init_ui(self):
-        label = QLabel(self)
+        self.label = QLabel(self)
         pixmap_bg = QPixmap("C:\\Users\\utkar\\OneDrive\\vscode\\bot\\ai_bg.jpg")
-        label.setPixmap(pixmap_bg)
-        self.setCentralWidget(label)
+        screen = QDesktopWidget().screenGeometry()
+        screen_width = screen.width()
+        screen_height = screen.height()
+        self.label.setPixmap(pixmap_bg)
+        self.setCentralWidget(self.label)
+        self.setAutoFillBackground(True)
         self.feedback_label = QLabel("Click 'Start' to begin voice interaction", self)
         self.feedback_label.setAlignment(Qt.AlignCenter)
         self.feedback_label.setFont(QFont("Helvetica", 24))
         self.feedback_label.setStyleSheet("color: white;")
-        self.feedback_label.setGeometry(312, 0, 600, 100)
-        self.resize(pixmap_bg.width(), pixmap_bg.height())
+        self.feedback_label.setGeometry(212, 0, 600, 100)
+        #self.label.resize(pixmap_bg.width(), pixmap_bg.height())
+        self.label.resize(screen_width, screen_height)
         self.indicator = QLabel(self)
         self.indicator.setGeometry(475, 160, 250, 250)
         pixmap_mic0 = QPixmap("C:/Users/utkar/OneDrive/vscode/bot/mic00.png")
@@ -245,22 +271,19 @@ class VoiceBotGUI(QMainWindow):
         self.settings_button.setGeometry(30, 120, 240, 80)
         self.settings_button.setFont(QFont("Helvetica", 32))
         self.settings_button.setStyleSheet("background-color: orange; color: white; border: none;")
-        self.settings_button.clicked.connect(self.open_settings)
+        self.settings_button.clicked.connect(self.voice_bot.open_settings)
         exit_button = QPushButton("Exit", settings_frame)
         exit_button.setGeometry(30, 300, 240, 80)
         exit_button.setFont(QFont("Helvetica", 32))
         exit_button.setStyleSheet("background-color: Orchid; color: white; border: none;")
         exit_button.clicked.connect(self.on_exit_button_click)
 
-    def open_settings(self):
-        settings_dialog = SettingsDialog(ai)
-        settings_dialog.exec_()
     def on_exit_button_click(self):
         self.stop_voice_interaction()
         exit()
     def start_voice_interaction(self):
         if not self.voice_bot.is_listening:
-            self.voice_bot.start_listening(self.count)
+            self.voice_bot.start_listening(count)
             self.update_feedback("Listening... Speak now")
             self.start_button.setDisabled(True)
             self.stop_button.setEnabled(True)
@@ -278,25 +301,21 @@ class VoiceBotGUI(QMainWindow):
         self.feedback_label.setText(message)
 
     def update_indicator(self, pixpath):
-        self.indicator.setPixmap(QPixmap(pixpath))
-
-def voice_interaction():
-    ai = SelfLearningAI(api_key)
-    app = QApplication(sys.argv)
-    voice_bot = VoiceBot(ai)
-    window = VoiceBotGUI(ai)
-    window.show()
-    sys.exit(app.exec_())
+        self.indicator.setPixmap(QPixmap(pixpath)) 
 
 class VoiceBot:
     def __init__(self, ai):
         self.is_listening = False
         self.ai = ai
-
+    
+    def open_settings(self):
+        settings_dialog = SettingsDialog(self.ai)
+        settings_dialog.exec_()
     def start_listening(self,check_start):
         if not self.is_listening:
             self.is_listening = True
             if check_start==0:
+                print('1f')
                 self.callback_process = multiprocessing.Process(target=self.ai.standby)
             else:
                 self.callback_process = multiprocessing.Process(target=self.ai.chat_voice)
@@ -306,12 +325,22 @@ class VoiceBot:
         if self.is_listening:
             self.is_listening = False
             self.callback_process.terminate()  # Terminate the process
+def voice_interaction():
+    
+    app = QApplication(sys.argv)
+    window = VoiceBotGUI()
+    
+    window.show()
+    sys.exit(app.exec_())
+
+
 if __name__ == "__main__":
     
-
-    # Start voice interaction in a separate process
+    
+    
     voice_process = multiprocessing.Process(target=voice_interaction)
     voice_process.start()
-    voice_process.join()  
+    voice_process.join()
+
     # Wait for the voice interaction process to finish
     #count not working in chat_voice
