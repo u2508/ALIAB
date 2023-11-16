@@ -1,0 +1,45 @@
+{
+	"greetings": 
+		[
+			"Good morning how are you",
+			"hello how are you",			
+			"Hello",
+			"Hi",
+			"hey",
+			"How are you doing"
+		],
+	"small_talk ": 
+		[
+		"hi there",
+		"hi!",
+		"how do you do",
+		"how are you",
+		"i 'm cool.",
+		"fine, you?",
+		"always cool.",
+		"i 'm ok",
+		"glad to hear that.",
+		"i am fine",
+		"glad to hear that.",
+		"i feel awesome",
+		"excellent, glad to hear that.",
+		"not so good",
+		"sorry to hear that.",
+		"what is your name",
+		"nice",
+		"thank you",
+		"yo boii",
+		"yes sir yes sir",
+		"whats up boi "],
+	"":[
+			"I am doing well.",
+			"That is good to hear",
+			"Yes it is.",
+			"Can I help you with anything?",
+			"Yes, I have a question.",
+			"What is your question?",
+			"Thank you",
+			"No problem"
+		]
+		
+}

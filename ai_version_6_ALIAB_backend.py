@@ -27,19 +27,19 @@ class VoiceInteractionHandler:
 
     def search_wikipedia(self, query):
         try:
-            wiki_wiki = wk.set_lang("en")
-            page = wiki_wiki.page(query)
-            if page.exists():
+            wk.set_lang("en")
+            page = wk.page(query)
+            if page.pageid!='':
                 return page.summary
         except wk.exceptions.DisambiguationError as e:
-            return e.options
+            return 'disambiguity error'
     def save_knowledge_base(self):
         with open('knowledge_base.json', 'w') as file:
             json.dump(self.knowledge_base, file)
 
     def load_knowledge_base(self):
         try:
-            with open(r'C:\Users\utkar\OneDrive\vscode\bot\knowledge_base.json', 'r') as file:
+            with open(r'knowledge_base.json', 'r') as file:
                 self.knowledge_base = json.load(file)
 
         except FileNotFoundError:
@@ -48,10 +48,7 @@ class VoiceInteractionHandler:
         
         if not self.is_listening:
             self.is_listening = True
-            if count==0:
-                self.callback_process = multiprocessing.Process(target=self.standby)
-            else:
-                self.callback_process = multiprocessing.Process(target=self.listen)
+            self.callback_process = multiprocessing.Process(target=self.listen)
             
             self.callback_process.start()
     def standby(self):
@@ -64,8 +61,8 @@ class VoiceInteractionHandler:
                 passwd = voice()
                 keydict = {"jarvis": 1208, "arya": 1312, "gpt 4": 1909}
                 if passwd in keydict:
+                    self.count += 1                    
                     self.listen()
-                    self.count += 1
                 else:
                     Speech("Authentication failed. Please try again.")
             except Exception as e:
@@ -75,6 +72,7 @@ class VoiceInteractionHandler:
                 pass
         else:
             Speech("Voice authentication failed after 3 attempts. Exiting.")
+            self.exit()
             
     def listen(self):
         Speech("Hello! I AM ALIAB which stands for Ai with learning intelligence Algorithm and Database.")
@@ -84,16 +82,14 @@ class VoiceInteractionHandler:
                 Speech("what can i do for you today")
                 user_input = voice().lower()
                 print("You: " + user_input)
-                if user_input == 'exit':
-                    Speech("Goodbye!")
-                    print("ALIAB: Goodbye!")
-                    break
+                if 'exit' in user_input:
+                    self.exit()
 
                 if user_input in self.knowledge_base:
                     Speech(self.knowledge_base[user_input])
                     print("ALIAB: ", self.knowledge_base[user_input])
                 elif user_input.startswith("tell me about "):
-                    topic = user_input[14:]
+                    topic = user_input.re
                     Speech("searching on wikipedia")
 
                     response = self.search_wikipedia(topic)
@@ -118,16 +114,17 @@ class VoiceInteractionHandler:
                         self.train(user_input, user_feedback)
                     else:
                         self.train(user_input, response)
+                    
             except AttributeError:
                 pass
             except Exception as e:
                 Speech("An error occurred. Please try again.")
                 Speech(e)
-
+    
     def stop_listening(self):
         self.is_listening = False
         self.callback_process.terminate()
-        print()
+        
     def exit(self):
         self.stop_listening()
         exit(Speech('goodbye'))

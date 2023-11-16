@@ -1,9 +1,9 @@
-import sys
+import sys,json
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import *
 from ai_version_6_ALIAB_backend import VoiceInteractionHandler
-api = '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'
+api = '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'
 class SettingsDialog(QDialog):
     def __init__(self, ai):
         super().__init__()
@@ -62,71 +62,83 @@ class VoiceBotGUI(QMainWindow):
     def __init__(self, voice):
         super().__init__()
         self.setWindowTitle("Voice Bot GUI")
-        self.interaction_history = ['\n',]
+        self.interaction_history = ['\n\n',]
         self.init_ui()
+        self.count=0
         self.voice_handler=voice
+    def gettext(self):
+        try:
+            with open(r'knowledge_base.json', 'r') as file:
+                self.knowledge_base = json.load(file)
+                self.interaction_history.extend(list(map(lambda a: str(a+": "+self.knowledge_base[a]), self.knowledge_base)))
+        except FileNotFoundError:
+            pass
+    def settext(self):
+        self.gettext()
+        history_text = "\n".join(self.interaction_history)
+        self.history_text.setPlainText(history_text)
     def init_ui(self):
         label = QLabel(self)
-        pixmap_bg = QPixmap("C:\\Users\\utkar\\OneDrive\\vscode\\bot\\ai_bg.jpg")
+        pixmap_bg = QPixmap("ai_bg.jpg")
         label.setPixmap(pixmap_bg)
         self.setCentralWidget(label)
         self.feedback_label = QLabel("Click 'Start' to begin voice interaction", self)
         self.feedback_label.setAlignment(Qt.AlignCenter)
         self.feedback_label.setFont(QFont("Helvetica", 24))
         self.feedback_label.setStyleSheet("color: white;")
-        self.feedback_label.setGeometry(312, 0, 600, 100)
+        self.feedback_label.setGeometry(382, 0, 600, 100)
         self.resize(pixmap_bg.width(), pixmap_bg.height())
         self.indicator = QLabel(self)
-        self.indicator.setGeometry(475, 160, 250, 250)
-        pixmap_mic0 = QPixmap("C:/Users/utkar/OneDrive/vscode/bot/mic00.png")
-        self.indicator.setStyleSheet("background-color:white ; border-radius: 120px;")
+        self.indicator.setGeometry(530, 230, 300, 300)
+        pixmap_mic0 = QPixmap("mic00.png")
+        self.indicator.setStyleSheet("background-color:white ; border-radius: 150px;")
         self.indicator.setPixmap(pixmap_mic0)
+        self.indicator.setAlignment(Qt.AlignCenter)
         self.start_button = QPushButton("Start", self)
-        self.start_button.setGeometry(400, 450, 150, 80)
+        self.start_button.setGeometry(450, 550, 150, 80)
         self.start_button.setFont(QFont("Helvetica", 32))
         self.start_button.setStyleSheet("background-color: green; color: white; border: none;")
         self.start_button.clicked.connect(self.start_voice_interaction)
         self.stop_button = QPushButton("Stop", self)
-        self.stop_button.setGeometry(700, 450, 150, 80)
+        self.stop_button.setGeometry(750, 550, 150, 80)
         self.stop_button.setFont(QFont("Helvetica", 32))
         self.stop_button.setStyleSheet("background-color: red; color: white; border: none;")
         self.stop_button.setDisabled(True)
         self.stop_button.clicked.connect(self.stop_voice_interaction)
         # Create a text area for interaction history
         self.history_text = QTextEdit(self)
-        self.history_text.setGeometry(890, 50, 300, 500)
-        self.history_text.setFont(QFont("Helvetica", 14))
+        self.history_text.setGeometry(950, 80, 350, 550)
+        self.history_text.setFont(QFont("Helvetica", 16))
         self.history_text.setReadOnly(True)
-        self.history_text.setStyleSheet("background-color: rgba(0,0,0, 208);")
+        self.history_text.setStyleSheet("background-color: rgba(0,0,0, 208);color: white;")
         self.history=QLabel("history".upper(), self)
         self.history.setAlignment(Qt.AlignCenter)
-        self.history.setFont(QFont("Helvetica", 24))
+        self.history.setFont(QFont("Helvetica", 28))
         self.history.setStyleSheet("color: red;")
-        self.history.setGeometry(890, 40, 300, 100)
-        history_text = "\n".join(self.interaction_history)
-        self.history_text.setPlainText(history_text)
+        self.history.setGeometry(950, 60, 350, 100)
+        self.settext()
         settings_frame = QFrame(self)
-        settings_frame.setGeometry(20, 40, 300, 500)
+        settings_frame.setGeometry(50, 80, 350, 550)
         settings_frame.setStyleSheet("background-color: rgba(0, 0, 0, 208);")
         self.options=QLabel("options".upper(), settings_frame)
         self.options.setAlignment(Qt.AlignCenter)
-        self.options.setFont(QFont("Helvetica", 24))
+        self.options.setFont(QFont("Helvetica", 28))
         self.options.setStyleSheet("color: red;background-color: rgba(0, 0, 0, 00);")
-        self.options.setGeometry(0, 6, 300, 80)
+        self.options.setGeometry(15, 10, 300, 80)
         # Create a settings button
         self.settings_button = QPushButton("Settings",settings_frame)
-        self.settings_button.setGeometry(30, 120, 240, 80)
+        self.settings_button.setGeometry(50, 180, 240, 80)
         self.settings_button.setFont(QFont("Helvetica", 32))
         self.settings_button.setStyleSheet("background-color: orange; color: white; border: none;")
         self.settings_button.clicked.connect(self.open_settings)
         exit_button = QPushButton("Exit", settings_frame)
-        exit_button.setGeometry(30, 300, 240, 80)
+        exit_button.setGeometry(50,350, 240, 80)
         exit_button.setFont(QFont("Helvetica", 32))
         exit_button.setStyleSheet("background-color: Orchid; color: white; border: none;")
         exit_button.clicked.connect(self.on_exit_button_click)
 
     def open_settings(self):
-        settings_dialog = SettingsDialog(self.ai)
+        settings_dialog = SettingsDialog(self.voice_handler)
         settings_dialog.exec_()
     def on_exit_button_click(self):
         self.stop_voice_interaction()
@@ -137,14 +149,8 @@ class VoiceBotGUI(QMainWindow):
             self.update_feedback("Listening... Speak now")
             self.start_button.setDisabled(True)
             self.stop_button.setEnabled(True)
-            self.update_indicator("C:/Users/utkar/OneDrive/vscode/bot/mic01.png")
-            try:
-                global count
-                print(count)
-                self.voice_handler.start_listening(count)
-            except NameError:
-                self.voice_handler.start_listening(0)
-                print(0)
+            self.update_indicator("mic01.png")
+            self.voice_handler.start_listening(self.count)
             
             
 
@@ -153,9 +159,8 @@ class VoiceBotGUI(QMainWindow):
             self.update_feedback("Voice interaction stopped")
             self.start_button.setEnabled(True)
             self.stop_button.setDisabled(True)
-            self.update_indicator("C:/Users/utkar/OneDrive/vscode/bot/mic02.png")
-            global count
-            count=self.voice_handler.stop_listening()
+            self.update_indicator("mic02.png")
+            self.voice_handler.stop_listening()
 
     def update_feedback(self, message):
         self.feedback_label.setText(message)
@@ -164,8 +169,7 @@ class VoiceBotGUI(QMainWindow):
         self.indicator.setPixmap(QPixmap(pixpath))
 
 def voice_interaction():
-        global count
-        count=0
+        
         app = QApplication(sys.argv)
         window = VoiceBotGUI(VoiceInteractionHandler(api))
         window.show()
