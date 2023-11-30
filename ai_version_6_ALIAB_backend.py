@@ -34,9 +34,7 @@ class VoiceInteractionHandler:
             if page.pageid!='':
                 return page.summary
         except wk.exceptions.DisambiguationError as e:
-            return 'similar topics found '+ e.options
-        except Exception as e:
-            return e
+            return 'disambiguity error'
     def save_knowledge_base(self):
         with open('knowledge_base.json', 'w') as file:
             json.dump(self.knowledge_base, file)
