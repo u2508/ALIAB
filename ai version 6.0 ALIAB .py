@@ -1,4 +1,5 @@
 import sys,json
+import spotlight_search as Spotlight
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import *
@@ -9,12 +10,18 @@ class SettingsDialog(QDialog):
         super().__init__()
         self.ai = ai
         self.setWindowTitle("Settings")
-        self.setGeometry(300, 300, 400, 200)
+        self.setGeometry(300, 300, 400, 150)
         self.init_ui()
         
 
     def init_ui(self):
         layout = QVBoxLayout()
+        
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        #self.setAttribute(Qt.WA_TranslucentBackground)    
+        # Create a group box for temperature settings
+        temperature_group_box = QGroupBox("Temperature Settings")
+        temperature_layout = QFormLayout()
 
         # Label and input field for adjusting temperature
         temperature_label = QLabel("AI Temperature:")
@@ -32,13 +39,18 @@ class SettingsDialog(QDialog):
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save_settings)
 
-        layout.addWidget(temperature_label)
-        layout.addWidget(self.temperature_input)
-        layout.addWidget(temperature_slider)
+        # Add the elements to the temperature layout
+        temperature_layout.addRow(temperature_label, self.temperature_input)
+        temperature_layout.addRow("Adjust Temperature:", temperature_slider)
+
+        temperature_group_box.setLayout(temperature_layout)
+
+        # Add the temperature group box and save button to the main layout
+        layout.addWidget(temperature_group_box)
         layout.addWidget(save_button)
+        layout.setAlignment(Qt.AlignTop)  # Align the top of the layout
 
         self.setLayout(layout)
-
     def update_temperature_input(self, value):
         # Update the temperature input field when the slider value changes
         self.temperature_input.setText(str(value / 100.0))
@@ -127,16 +139,23 @@ class VoiceBotGUI(QMainWindow):
         self.options.setGeometry(15, 10, 300, 80)
         # Create a settings button
         self.settings_button = QPushButton("Settings",settings_frame)
-        self.settings_button.setGeometry(50, 180, 240, 80)
+        self.settings_button.setGeometry(50, 120, 240, 80)
         self.settings_button.setFont(QFont("Helvetica", 32))
         self.settings_button.setStyleSheet("background-color: orange; color: white; border: none;")
         self.settings_button.clicked.connect(self.open_settings)
+        self.keyboard_button = QPushButton("Keyboard \nChat",settings_frame)
+        self.keyboard_button.setGeometry(50, 250, 240, 140)
+        self.keyboard_button.setFont(QFont("Helvetica", 32))
+        self.keyboard_button.setStyleSheet("background-color: cyan; color: white; border: none;")
+        self.keyboard_button.clicked.connect(self.SP_Search)
         exit_button = QPushButton("Exit", settings_frame)
-        exit_button.setGeometry(50,350, 240, 80)
+        exit_button.setGeometry(50,430, 240, 80)
         exit_button.setFont(QFont("Helvetica", 32))
         exit_button.setStyleSheet("background-color: Orchid; color: white; border: none;")
         exit_button.clicked.connect(self.on_exit_button_click)
-
+    def SP_Search(self):
+        Spotlight.exec(api)
+        
     def open_settings(self):
         settings_dialog = SettingsDialog(self.voice_handler)
         settings_dialog.exec_()
