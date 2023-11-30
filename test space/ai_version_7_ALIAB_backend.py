@@ -1,28 +1,39 @@
 import multiprocessing
-import json
+import pyrebase,json
 import openai
 import wikipedia as wk
 from voice_recognition_module import Speech, voice
+import requests
+from requests.exceptions import HTTPError, RequestException
 
 class VoiceInteractionHandler:
     def __init__(self, api):
         self.is_listening = False
         self.count=0
         self.api_key = api
-        self.load_knowledge_base()
         self.gpt3_temperature = 0.7
+        self.firebase_config = {
+            "apiKey": "AIzaSyCsM6DAGXAZTyE1Haml-qV54r4y9_EPVl0",
+            "authDomain": "aliab-be691.firebaseapp.com",
+            "databaseURL": "https://console.firebase.google.com/u/0/project/aliab-be691/database/aliab-be691-default-rtdb/data/~2F",
+            "projectId": "aliab-be691",
+            "storageBucket": "aliab-be691.appspot.com",
+            "messagingSenderId": "49413450121",
+            "appId": "1:49413450121:web:fe951b137e75c66209d958",
+        }
+        self.initialise()
+        self.save_knowledge_base()
+        
     def query_gpt3(self, input_text):
-        try:
-            openai.api_key = self.api_key
-            response = openai.Completion.create(
+        openai.api_key = self.api_key
+        response = openai.Completion.create(
             engine="davinci",
             prompt=input_text,
             max_tokens=50,
             temperature=self.gpt3_temperature
-            )
-            return response.choices[0].text.strip()
-        except Exception as e:
-            self.search_wikipedia(input_text)
+        )
+        return response.choices[0].text.strip()
+
     def train(self, user_input, user_feedback):
         self.knowledge_base[user_input] = user_feedback
         self.save_knowledge_base()
@@ -34,20 +45,35 @@ class VoiceInteractionHandler:
             if page.pageid!='':
                 return page.summary
         except wk.exceptions.DisambiguationError as e:
-            return 'similar topics found '+ e.options
-        except Exception as e:
-            return e
+            return 'disambiguity error'
     def save_knowledge_base(self):
-        with open('knowledge_base.json', 'w') as file:
-            json.dump(self.knowledge_base, file)
+        try:
+            firebase = pyrebase.initialize_app(self.firebase_config)
+            db = firebase.database()
+            print(self.knowledge_base)
+            response = db.child("knowledge_base").set(self.knowledge_base)
+            print("Response content:", response.content)
+            # Check for HTTP errors
+            response.raise_for_status()
+
+            print("Knowledge base saved successfully.")
+        except HTTPError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+            print(f"Response content: {response.content}")
+        except RequestException as req_err:
+            print(f"Request exception occurred: {req_err}")
+        except Exception as e:
+            print(f"Error saving knowledge base: {e}")
 
     def load_knowledge_base(self):
         try:
-            with open(r'knowledge_base.json', 'r') as file:
-                self.knowledge_base = json.load(file)
-
-        except FileNotFoundError:
-            self.knowledge_base = {}
+            firebase = pyrebase.initialize_app(self.firebase_config)
+            db = firebase.database()
+            knowledge_base = db.child("knowledge_base").get().val()
+            if knowledge_base:
+                self.knowledge_base = knowledge_base
+        except Exception as e:
+            print(f"Error loading knowledge base: {e}")
     def start_listening(self,count):
         
         if not self.is_listening:
@@ -86,14 +112,6 @@ class VoiceInteractionHandler:
                 Speech("what can i do for you today")
                 user_input = voice().lower()
                 print("You: " + user_input)
-                self.runloop(user_input)
-                    
-            except AttributeError:
-                pass
-            except Exception as e:
-                Speech("An error occurred. Please try again.")
-                Speech(e)
-    def runloop(self,user_input):
                 if 'exit' in user_input:
                     self.exit()
 
@@ -101,7 +119,7 @@ class VoiceInteractionHandler:
                     Speech(self.knowledge_base[user_input])
                     print("ALIAB: ", self.knowledge_base[user_input])
                 elif user_input.startswith("tell me about "):
-                    topic = user_input.replace("tell me about ","")
+                    topic = user_input.re
                     Speech("searching on wikipedia")
 
                     response = self.search_wikipedia(topic)
@@ -126,6 +144,13 @@ class VoiceInteractionHandler:
                         self.train(user_input, user_feedback)
                     else:
                         self.train(user_input, response)
+                    
+            except AttributeError:
+                pass
+            except Exception as e:
+                Speech("An error occurred. Please try again.")
+                Speech(e)
+    
     def stop_listening(self):
         self.is_listening = False
         self.callback_process.terminate()
@@ -133,3 +158,7 @@ class VoiceInteractionHandler:
     def exit(self):
         self.stop_listening()
         exit(Speech('goodbye'))
+    def initialise(self):
+        with open(r'knowledge_base.json', 'r') as file:
+            self.knowledge_base = json.load(file)
+        
