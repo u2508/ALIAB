@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import *
 from ai_version_6_ALIAB_backend import VoiceInteractionHandler
-api = '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'
+api = "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"
 class SettingsDialog(QDialog):
     def __init__(self, ai):
         super().__init__()
